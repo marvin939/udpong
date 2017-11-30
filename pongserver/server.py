@@ -1,7 +1,8 @@
 import queue
 import threading
 import socket
-import pong.game as game
+# import pong
+import pong.game
 
 
 class PongServer(threading.Thread, socket.socket):
@@ -22,7 +23,7 @@ class PongServer(threading.Thread, socket.socket):
         self._current_player_to_assign = 1
         self.client_handlers = []
 
-        self.pong = game.Pong()
+        self.pong_world = pong.game.Pong()
 
     def run(self):
         pass
@@ -73,6 +74,9 @@ class ClientHandler(threading.Thread, socket.socket):
 
     def send_player_number(self):
         self.sendto(str(self.player_number).encode('utf-8'), self.client_address)
+
+    def send_game_update(self):
+        self.sendto(self.server.pong_world.locations_json().encode('utf-8'), self.client_address)
 
     def run(self):
         # Handle game input from client

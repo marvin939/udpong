@@ -2,8 +2,8 @@ import time
 import threading
 import pong.game as game
 from tests.constants import *
-import pong_server.server as server
-import pong_client.client as client
+import pongserver.server as server
+import pongclient.client as client
 import unittest
 import pong.entities as entities
 

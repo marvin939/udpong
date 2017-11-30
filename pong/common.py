@@ -1,49 +1,5 @@
-import pong.entities as entities
-import pong.game as game
-import pong.entities
-import pong.game
 import pygame.math
-import json
-
-
-def convert_to_builtin_type(obj):
-    """
-    Convert user defined class object into the dictionary for use with JSON.
-    This function will be used with json's dump function as the 'default'
-    argument.
-
-    Code origin: https://pymotw.com/3/json/     (json_dump_default.py)
-    Example:
-        json.dumps(obj, default=convert_to_builtin_type)
-    """
-    d = {
-        '__class__': obj.__class__.__name__,
-        '__module__': obj.__module__,
-    }
-    d.update(obj.__dict__)
-    return d
-
-
-def dict_to_object(d):
-    """
-    Convert a dictionary to an object. This function will be used with json's
-    load function as the 'object_hook' argument.
-    :param d:
-    :return:
-    """
-    if '__class__' in d:
-        class_name = d.pop('__class__')
-        module_name = d.pop('__module__')
-        module_ = __import__(module_name)
-        class_ = getattr(module_, class_name)
-        args = {
-            key: value
-            for key, value in d.items()
-        }
-        inst = class_(**args)
-    else:
-        inst = d
-    return inst
+import pong
 
 
 def to_json(obj):
@@ -67,12 +23,11 @@ def to_json(obj):
 
     if isinstance(obj, pong.game.Pong):
         return {'__class__': obj_class,
-                '1': obj.player1,
-                '2': obj.player2,
-                'b': obj.ball,
+                'player1': obj.player1,
+                'player2': obj.player2,
+                'ball': obj.ball,
                 'state': None}
     # future: Add game state; eg. WinnerP1, WinnerP2, Idle (ball hasn't launched), Playing
-
     raise TypeError(repr(obj) + ' is not JSON serializable!')
 
 
@@ -82,34 +37,36 @@ def from_json(json_obj):
     if '__class__' in json_obj:
         _class = json_obj['__class__']
 
-        if json_obj['__class__'] == 'Vector2':
+        if _class == 'Vector2':
             return pygame.math.Vector2(json_obj['__value__'])  # unpack __value__ and turn it into Vector2
 
-        if json_obj['__class__'] == 'Rect':
+        if _class == 'Rect':
             return pygame.Rect(json_obj['__value__'])
 
-        if json_obj['__class__'] == 'Ball':
+        if _class == 'Ball':
             x, y, w, h = (*json_obj['__value__'],)
-            ball = entities.Ball((x, y))
+            ball = pong.entities.Ball((x, y))
             ball.WIDTH, ball.HEIGHT = w, h
             return ball
 
-        if json_obj['__class__'] == 'Player':
+        if _class == 'Player':
             x, y, w, h = (*json_obj['rect'],)
-            player = game.Player(json_obj['number'])
+            player = pong.game.Player(json_obj['number'])
             player.location = pygame.math.Vector2(x, y)
             player.WIDTH, player.HEIGHT = w, h
             player.score = json_obj['score']
             return player
 
         if _class == 'Pong':
-            pong = game.Pong()
-            # pong.player =
-            pong.player1 = json_obj['1']
-            pong.player2 = json_obj['2']
-            pong.ball = json_obj['b']
-            pong.state = json_obj['state']  # For future things
-            return pong
-
+            pong_world = pong.game.Pong()
+            pong_world.player1 = json_obj['player1']
+            pong_world.player2 = json_obj['player2']
+            pong_world.ball = json_obj['ball']
+            pong_world.state = json_obj['state']  # For future things
+            return pong_world
     return json_obj
 
+
+class ClientCommand:
+    def __init__(self):
+        return

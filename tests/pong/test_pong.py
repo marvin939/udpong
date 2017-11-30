@@ -1,8 +1,13 @@
-from pygame.math import Vector2
-import pong.entities as entities
-import pong.constants as consts
-import pong.game as game
+import json
 import unittest
+
+from pygame.math import Vector2
+
+import pong
+import pong.common as common
+import pong.constants as consts
+import pong.entities as entities
+import pong.game as game
 
 
 class PongInstantiationTestCase(unittest.TestCase):
@@ -97,3 +102,32 @@ class PongGetBallSideTestCase(unittest.TestCase):
         self.pong.ball.location = Vector2(p2_loc.x - 20, p2_loc.y)
         side = self.pong.ball_side()
         self.assertEqual(side, self.pong.player2)
+
+
+class PongJSONTestCase(unittest.TestCase):
+    def setUp(self):
+        self.pong = game.Pong()
+
+    def test_json_pong(self):
+        j = self.pong.locations_json()
+
+        decoded = json.loads(j, object_hook=common.from_json)
+        self.assertIsInstance(decoded, game.Pong)
+
+
+class PongUpdateUsingOtherPong(unittest.TestCase):
+    def setUp(self):
+        self.pong = game.Pong()
+        self.pong.player1.location.y = 100
+        self.pong.player2.location.y = 100
+        self.pong.ball.location.y = 100
+
+        self.other_pong = game.Pong()
+
+    def test_update(self):
+        j = self.pong.locations_json()
+        # p = json.loads(j, object_hook=pong.common.from_json)
+        self.other_pong.update_with_json(j)
+        self.assertEqual(self.other_pong.player1.location, self.pong.player1.location)
+        self.assertEqual(self.other_pong.player2.location, self.pong.player2.location)
+        self.assertEqual(self.other_pong.ball.location, self.pong.ball.location)

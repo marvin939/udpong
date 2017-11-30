@@ -1,7 +1,7 @@
 import unittest
 import pong.game as game
 from tests.constants import *
-import pong_client.client as client
+import pongclient.client as client
 
 
 # Don't bother with this yet...

@@ -1,8 +1,9 @@
 import random
-import pong_server.server as server
+import pongserver.server as server
 import threading
 import socket
-import pong.game as game
+# import pong.game as game
+import pong
 
 
 class Client(socket.socket, threading.Thread):

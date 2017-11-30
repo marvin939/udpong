@@ -1,6 +1,8 @@
 import json
 import pygame
-from pong.constants import *
+# from pong.constants import *
+import pong
+import pong.constants
 from pygame.math import Vector2
 # import pong.common as common
 
@@ -49,7 +51,7 @@ class Ball(GameEntity):
     HEIGHT = 16
     WIDTH = 16
     SIZE = (WIDTH, HEIGHT)
-    COLOR = WHITE
+    COLOR = pygame.color.Color('white')
     SPEED = 200
     # WORLD = None
 
@@ -72,8 +74,8 @@ class Ball(GameEntity):
             self.location.y = 0
             self.heading = self.heading.reflect(Vector2(0, 1))
 
-        elif self.location.y + self.HEIGHT > FIELD_HEIGHT:
-            self.location.y = FIELD_HEIGHT - self.HEIGHT
+        elif self.location.y + self.HEIGHT > pong.constants.FIELD_HEIGHT:
+            self.location.y = pong.constants.FIELD_HEIGHT - self.HEIGHT
             self.heading = self.heading.reflect(Vector2(0, 1))
 
         collision = self.get_collision()
@@ -112,7 +114,7 @@ class Paddle(GameEntity):
     WIDTH = 16
     HEIGHT = WIDTH * 5
     SIZE = (WIDTH, HEIGHT)
-    COLOR = WHITE
+    COLOR = pygame.color.Color('white')
     SPEED = 200
 
     def __init__(self, location=None):
@@ -142,9 +144,9 @@ class Paddle(GameEntity):
 
 
 class World(pygame.sprite.Group):
-    WIDTH = FIELD_WIDTH
-    HEIGHT = FIELD_HEIGHT
-    COLOR = BLACK
+    WIDTH = pong.constants.FIELD_WIDTH
+    HEIGHT = pong.constants.FIELD_HEIGHT
+    COLOR = pygame.color.Color('black')
     X = 0
     Y = 0
 
