@@ -27,6 +27,7 @@ class Player(entities.Paddle):
 
 
 class Pong(entities.World):
+    """Represents the playing field"""
 
     def __init__(self):
         super().__init__()

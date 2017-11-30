@@ -1,6 +1,8 @@
+import json
 import pygame
 from pong.constants import *
 from pygame.math import Vector2
+# import pong.common as common
 
 
 class GameEntity(pygame.sprite.Sprite):
@@ -33,6 +35,14 @@ class GameEntity(pygame.sprite.Sprite):
             if self.get_rect().colliderect(entity.get_rect()):
                 return entity
         return None
+
+    def json_string(self):
+        attributes = dict()
+        attributes['class_name'] = self.__class__.__name__
+        attributes['location'] = (*self.location,)
+        # attributes.update(self.__dict__)
+        # return json.dumps(self, default=common.convert_to_builtin_type, separators=(',',':'))
+        return json.dumps(attributes, separators=(',',':'))
 
 
 class Ball(GameEntity):

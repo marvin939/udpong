@@ -1,3 +1,4 @@
+import json
 from pygame.math import Vector2
 import unittest
 import pong.entities as entities
@@ -60,3 +61,21 @@ class GameEntityNoWorldGetCollision(unittest.TestCase):
 
     def test_no_collision(self):
         self.assertIsNone(self.ent.get_collision())
+
+
+class GameEntityJsonString(unittest.TestCase):
+    def setUp(self):
+        self.ent = entities.GameEntity()
+
+    def test_jsonify(self):
+        j = self.ent.json_string()
+        d = json.loads(j)
+        print('json:', j)
+        print(d)
+        self.assertIn('location', d.keys())
+        self.assertIn('class_name', d.keys())
+
+        # Compare values
+        self.assertEqual((*d['location'],), (*self.ent.location,))
+        self.assertEqual(d['class_name'], type(self.ent).__name__)
+
