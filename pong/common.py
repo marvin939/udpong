@@ -1,11 +1,19 @@
+import copy
 import pygame.math
 import pong
+
+
+BUFFER_SIZE = 4096
 
 
 def to_json(obj):
     """Converts an object into a JSON-serializable type.
     Original idea: http://www.diveintopython3.net/serializing.html"""
     obj_class = type(obj).__name__
+
+    if isinstance(obj, pong.common.ClientCommand):
+        return {'__class__': obj_class,
+                '__value__': obj.__dict__}
 
     if isinstance(obj, (pygame.math.Vector2, pygame.Rect)):
         return {'__class__': obj_class,
@@ -27,6 +35,7 @@ def to_json(obj):
                 'player2': obj.player2,
                 'ball': obj.ball,
                 'state': None}
+
     # future: Add game state; eg. WinnerP1, WinnerP2, Idle (ball hasn't launched), Playing
     raise TypeError(repr(obj) + ' is not JSON serializable!')
 
@@ -36,6 +45,9 @@ def from_json(json_obj):
     Original idea: customserializer.py from http://www.diveintopython3.net/serializing.html"""
     if '__class__' in json_obj:
         _class = json_obj['__class__']
+
+        if _class == 'ClientCommand':
+            return pong.common.ClientCommand(from_dict=json_obj['__value__'])
 
         if _class == 'Vector2':
             return pygame.math.Vector2(json_obj['__value__'])  # unpack __value__ and turn it into Vector2
@@ -68,5 +80,21 @@ def from_json(json_obj):
 
 
 class ClientCommand:
-    def __init__(self):
-        return
+    def __init__(self, from_dict=None):
+        self.move_up = False
+        self.move_down = False
+        self.action = False
+
+        if from_dict is not None and isinstance(from_dict, dict):
+            self.update_from_dict(from_dict)
+            return
+
+    def clone(self):
+        return copy.copy(self)
+
+    def update_from_dict(self, d):
+        if not isinstance(d, dict):
+            raise TypeError('Argument {} should be a dictionary!'.format(d))
+        for k, v in d.items():
+            if k in self.__dict__.keys():
+                self.__dict__[k] = v

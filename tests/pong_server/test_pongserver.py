@@ -1,3 +1,4 @@
+import json
 import time
 import socket
 import threading
@@ -5,6 +6,8 @@ import unittest
 
 # from tests.constants import *
 # import pongserver
+import pong.common
+import tests.common
 import pongserver.server
 # import pongserver.server as server
 import tests.constants
@@ -44,8 +47,9 @@ class PongServerClientConnectReturnsClientAddress(unittest.TestCase):
         self.retd = dict()
         self.client_wait_thread = threading.Thread(target=self.ps.wait_client, args=(self.retd,))
         self.client_wait_thread.start()
-        self.fake_client = threading.Thread(target=self.fake_client,
-                                            args=(self.ps.getsockname(), self.ps.port + 5, self.retd))
+
+        self.fake_client = threading.Thread(target=tests.common.fake_send_client,
+                                            args=('connect', ('localhost', self.ps.port + 5), self.ps.getsockname(),))
         self.fake_client.start()
         self.fake_client.join()
         self.ps.close()
@@ -55,18 +59,9 @@ class PongServerClientConnectReturnsClientAddress(unittest.TestCase):
         self.assertNotEqual(ca, self.ps.port)
         print('Got client address:', ca)
 
-    def fake_client(self, server_address, port, return_queue):
-        with socket.socket(type=socket.SOCK_DGRAM) as s:
-            s.settimeout(2)
-            s.bind(('localhost', port))
-            s.sendto('connect'.encode(), server_address)
-            # data, _ = s.recvfrom(4096)
-            # if data:
-            #     if return_queue:
-            #         return_queue['player_number'] = int(data.decode('utf-8'))
-
 
 class PongServerReturnPlayerNumberToClientTestCase(unittest.TestCase):
+    """Send player number to client."""
     def setUp(self):
         self.client_address = ('localhost', 12345)
         self.player_number = 1
@@ -74,7 +69,8 @@ class PongServerReturnPlayerNumberToClientTestCase(unittest.TestCase):
 
         self.ps = pongserver.server.PongServer()
 
-        self.client_thread = threading.Thread(target=self.fake_client, args=(self.retd,))
+        # self.client_thread = threading.Thread(target=self.fake_client, args=(self.retd,))
+        self.client_thread = threading.Thread(target=tests.common.fake_receive_client, args=(self.client_address, self.retd, 'player_number'))
         self.client_thread.start()
         self.server_thread = threading.Thread(target=self.ps.send_player_number, args=(self.client_address, self.player_number))
         self.server_thread.start()
@@ -87,24 +83,11 @@ class PongServerReturnPlayerNumberToClientTestCase(unittest.TestCase):
 
     def test_player_number_one(self):
         # See if correct player number is handed out.
-        self.assertEqual(self.retd['player_number'], self.player_number)
+        self.assertEqual(int(self.retd['player_number']), self.player_number)
         # The address that the server has sent its player number to gets stored in itself.
         self.assertEqual(self.ps.player_addresses[1], self.client_address)
         # Client handler thread added.
         self.assertEqual(len(self.ps.client_handlers), 1)
-
-    def fake_client(self, return_dict):
-        """Client that simulates receiving of player number"""
-        with socket.socket(type=socket.SOCK_DGRAM) as s:
-            s.bind(self.client_address)
-            s.settimeout(2)
-            data, address = s.recvfrom(4096)
-            if not data:
-                return
-            decoded = data.decode('utf-8')
-            if return_dict is None:
-                return
-            return_dict['player_number'] = int(decoded)     # Store the result in the return dictionary.
 
 
 class PongServerReturnPlayerNumbersToClientsTestCase(unittest.TestCase):
@@ -149,7 +132,8 @@ class ClientHandlerSendUpdatesTestCase(unittest.TestCase):
 
         # Thread that sends game update to all clients.
         self.server_thread = threading.Thread(target=self.client_handler.send_game_update)
-        self.client_thread = threading.Thread(target=self.fake_client, args=(self.retd,))
+        # self.client_thread = threading.Thread(target=self.fake_client, args=(self.retd,))
+        self.client_thread = threading.Thread(target=tests.common.fake_receive_client, args=(self.client_address, self.retd, 'pong_world_json'))
 
         # client starts first.
         self.client_thread.start()
@@ -165,17 +149,45 @@ class ClientHandlerSendUpdatesTestCase(unittest.TestCase):
     def test_decode_updates(self):
         # self.client
         # self.assertEqual(self.retd['updates'], self.client_handler.jsonify_entities())
-        self.assertEqual(self.retd['received_json'], self.ps.pong_world.locations_json())
-        print('retd\'s received_json:', self.retd['received_json'])
-        print('length:', len(self.retd['received_json']))
+        self.assertEqual(self.retd['pong_world_json'], self.ps.pong_world.locations_json())
+        print('retd\'s pong_world_json:', self.retd['pong_world_json'])
+        print('length:', len(self.retd['pong_world_json']))
 
-    def fake_client(self, retd):
-        with socket.socket(type=socket.SOCK_DGRAM) as s:
-            s.settimeout(2)
-            s.bind(self.client_address)
-            data, address = s.recvfrom(4096)
-            if data is None:
-                return
-            if retd is None:
-                raise ValueError('Cannot return value without return dictionary argument!')
-            retd['received_json'] = data.decode('utf-8')
+
+class ClientHandlerReceiveClientCommand(unittest.TestCase):
+    """When client handler receives a client command from the client, it will update all the entities in
+    the pong world (players 1, 2, and ball)"""
+    def setUp(self):
+        self.retd = dict()
+        self.client_address = ('localhost', 10102)
+        self.ps = pongserver.server.PongServer()
+        self.client_handler = pongserver.server.ClientHandler(10100, self.client_address, 1, self.ps)
+
+        self.cc = pong.common.ClientCommand()
+        self.cc.move_up = True
+        self.cc.move_down = False
+        self.cc.action = True
+        self.jcc = json.dumps(self.cc, default=pong.common.to_json, separators=(',', ':'))
+
+        self.client_handler_thread = threading.Thread(target=self.client_handler.receive_client_command, args=(self.retd,))
+        self.fake_client_thread = threading.Thread(target=tests.common.fake_send_client, args=(self.jcc,
+                                                                                  self.client_address,
+                                                                                  self.client_handler.getsockname()))
+        self.fake_client_thread.setDaemon(True)
+
+        self.client_handler_thread.start()
+        self.fake_client_thread.start()
+        self.fake_client_thread.join()
+        self.client_handler_thread.join()
+
+    def tearDown(self):
+        self.client_handler.close()
+        self.ps.close()
+
+    def test_receive_client_command_object(self):
+        self.assertIsInstance(self.retd['client_command'], pong.common.ClientCommand)
+
+        cc = self.retd['client_command']
+        self.assertEqual(cc.move_up, self.cc.move_up)       # True
+        self.assertEqual(cc.move_down, self.cc.move_down)   # False
+        self.assertEqual(cc.action, self.cc.action)         # True

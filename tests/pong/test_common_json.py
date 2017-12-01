@@ -132,6 +132,36 @@ class PongJsonTestCase(unittest.TestCase):
         self.assertNotEqual(pong_world.player1, pong_world.ball)
 
 
+class ClientCommandJson(unittest.TestCase):
+    def setUp(self):
+        self.cc = pong.common.ClientCommand()
+        self.cc.move_up = True
+        self.cc.move_down = False
+        self.cc.action = True
+        # print('self.cc.__dict__:', self.cc.__dict__)
 
+    def test_to_json(self):
+        j = json.dumps(self.cc, default=pong.common.to_json)
+        d = json.loads(j)
+        self.assertEqual(d['__class__'], type(self.cc).__name__)
+        dvalues = d['__value__']
+        self.assertEqual(d['__value__']['move_up'], self.cc.move_up)
+        self.assertEqual(dvalues['move_down'], self.cc.move_down)
+        self.assertEqual(dvalues['action'], self.cc.action)
+        return
 
+    def test_from_json(self):
+        j = json.dumps(self.cc, default=pong.common.to_json)
+        cc2 = json.loads(j, object_hook=pong.common.from_json)
+        self.assertIsInstance(cc2, pong.common.ClientCommand)
+        self.assertEqual(cc2.__dict__, self.cc.__dict__)
 
+    def test_modify_dict(self):
+        """Just testing if changing the __dict__ dictionary of an object would
+        change the attribute of the object corresponding to the dictionary item that has been changed."""
+
+        self.cc.move_up = False
+        self.assertEqual(self.cc.move_up, False)
+
+        self.cc.__dict__['move_up'] = True
+        self.assertEqual(self.cc.move_up, True)

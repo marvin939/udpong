@@ -1,3 +1,4 @@
+import json
 import queue
 import threading
 import socket
@@ -77,6 +78,19 @@ class ClientHandler(threading.Thread, socket.socket):
 
     def send_game_update(self):
         self.sendto(self.server.pong_world.locations_json().encode('utf-8'), self.client_address)
+
+    def receive_client_command(self, retd=None):
+        data, address_info = self.recvfrom(pong.common.BUFFER_SIZE)
+        if data:
+            decoded = data.decode('utf-8')
+            try:
+                cc = json.loads(decoded, object_hook=pong.common.from_json)
+            except ValueError as err:
+                print(err)
+                raise ValueError('Expecting a JSON string from client, but got something else:', decoded)
+            if retd is not None and isinstance(retd, dict):
+                retd['client_command'] = cc
+            return cc
 
     def run(self):
         # Handle game input from client
