@@ -15,6 +15,8 @@ import pong.entities
 SERVER_ADDRESS = ('localhost', pongserver.server.PongServer.DEFAULT_PORT)
 SCREEN_SIZE = (pong.entities.World.WIDTH, pong.entities.World.HEIGHT)
 
+FPS = 60
+
 
 def main():
     pong_world = pong.game.Pong()
@@ -23,15 +25,15 @@ def main():
     # Randomly generate the address for this client
     local_address = ('localhost', random.randint(10000, 20000))
 
-    svh = pongclient.client.ServerHandler(local_address,    # bind_address
-                                          SERVER_ADDRESS,   # server_address
-                                          pong_world,       # pong_world
-                                          client_command,   # client_command
-                                          )
+    svh = pongclient.client.ServerHandler(local_address,
+                                          SERVER_ADDRESS,
+                                          pong_world,
+                                          client_command,)
     svh.start()
 
     screen = pygame.display.set_mode(SCREEN_SIZE)
     pygame.display.set_caption('Pong GUI Client')
+    clock = pygame.time.Clock()
 
     while True:
         for event in pygame.event.get():
@@ -58,10 +60,14 @@ def main():
         # actually done in the server handler thread.
 
         # Draw graphics
+        screen.fill(pygame.Color('black'))
         for entity in pong_world.sprites():
             screen.blit(entity.image, entity.location)
+            # if isinstance(entity, pong.game.Player) and entity.number == svh.player_number:
+            #     print('player location: ', entity.location)
 
         pygame.display.update()
+        clock.tick(60)
 
     return
 

@@ -39,7 +39,7 @@ class Pong(pong.entities.World):
 
     def __init__(self):
         super().__init__()
-        pong.entities.GameEntity.world = self
+        # pong.entities.GameEntity.world = self
 
         self.player1 = Player(pong.constants.PLAYER1)
         self.player2 = Player(pong.constants.PLAYER2)
@@ -52,7 +52,10 @@ class Pong(pong.entities.World):
         self.player1.reset_location()
         self.player2.reset_location()
         self.ball.reset()
+
         self.add(self.player1, self.player2, self.ball)
+
+        self.ball.heading = Vector2(1, 1).normalize()
 
     def ball_side(self):
         """Return the player the ball is nearest to"""

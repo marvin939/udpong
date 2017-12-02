@@ -25,7 +25,8 @@ class ServerHandler(socket.socket, threading.Thread):
         self.connect()
         self.player_number = self.receive_player_number()
         while True:
-            self.receive_game_update_json()
+            game_update_json = self.receive_game_update_json()
+            self.pong_world.update_with_json(game_update_json)
             self.send_client_command()
 
     def __del__(self):
@@ -47,15 +48,21 @@ class ServerHandler(socket.socket, threading.Thread):
             raise ValueError(err + ' Should have received an integer!')
         if return_dict is not None and isinstance(return_dict, dict):
             return_dict['player_number'] = player_number
+
+        # OVERWRITE self.server_address to the one received, since that will be address of the client handler
+        self.server_address = address
+
         return player_number
 
     def receive_game_update_json(self, return_dict=None):
         data, address = self.recvfrom(self.BUFFER_SIZE)
         if data is None:
+            raise ValueError('Unable to receive game update!')
             return -1
         decoded_json = data.decode('utf-8')
         try:
-            pong_update = json.loads(decoded_json, object_hook=pong.common.from_json)
+            # pong_update = json.loads(decoded_json, object_hook=pong.common.from_json)
+            pass
         except json.JSONDecodeError as err:
             raise json.JSONDecodeError(err + ' Not a JSON string!')
         if return_dict is not None and isinstance(return_dict, dict):
@@ -67,5 +74,5 @@ class ServerHandler(socket.socket, threading.Thread):
         if self.client_command is None:
             print('Unable to send client command: None!')
             return
-        self.sendto(self.client_command.json(), self.server_address)
+        self.sendto(self.client_command.json().encode('utf-8'), self.server_address)
         return

@@ -13,6 +13,7 @@ class PongServer(threading.Thread, socket.socket):
     DEFAULT_PORT = 10939
     COMMAND_CLIENT_CONNECT = 'pong_connect'
     TIMEOUT = 2.0
+    COMMAND_RATE = 60   # updates per second
 
     def __init__(self, port=None):
         threading.Thread.__init__(self, name='Server thread')
@@ -30,7 +31,7 @@ class PongServer(threading.Thread, socket.socket):
 
     def run(self):
         print('Starting server.')
-        
+
         for i in range(2):
             player_number = i + 1
 
@@ -38,7 +39,7 @@ class PongServer(threading.Thread, socket.socket):
             c = self.wait_client()
             self.clients.append(c)
 
-            print('Sending player number: {}'.format(player_number))
+            print('Sending player number {} to {}'.format(player_number, c))
             self.send_player_number(c, player_number)
 
         print('Starting game.')
@@ -46,19 +47,22 @@ class PongServer(threading.Thread, socket.socket):
         seconds_passed = 0
 
         while True:
-            self.server.pong_world.update(seconds_passed=seconds_passed)
-            seconds_passed = clock.tick() / 1000
+            self.pong_world.update(seconds_passed=seconds_passed)
+            seconds_passed = clock.tick(self.COMMAND_RATE) / 1000
         return
 
     def wait_client(self, return_queue=None):
         """Step 1: Wait for a client to connect."""
         data, address_info = self.recvfrom(self.BUFFER_SIZE)
+        print('data:', data, 'address_info:', address_info)
+
         if data:
             decoded = data.decode('utf-8')
-            if decoded != 'connect':
-                return
+            if decoded != self.COMMAND_CLIENT_CONNECT:
+                raise ValueError('Expecting "{}", but got "{}"'.format(self.COMMAND_CLIENT_CONNECT, decoded))
             if return_queue is not None:
                 return_queue['client_address'] = address_info
+            # print('Client address found:', address_info)
             return address_info
 
     def send_player_number(self, client_address, player_number):

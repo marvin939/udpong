@@ -102,7 +102,7 @@ class ClientCommand:
                 self.__dict__[k] = v
 
     def json(self):
-        return json.dumps(self, object_hook=pong.common.to_json)
+        return json.dumps(self, default=pong.common.to_json)
 
     def heading(self):
         dy = 0
