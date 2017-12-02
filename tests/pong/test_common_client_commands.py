@@ -1,3 +1,4 @@
+from pygame.math import Vector2
 import pong.common
 import unittest
 
@@ -54,3 +55,21 @@ class ClientCommandGet(unittest.TestCase):
         self.assertEqual(cc2.move_up, self.cc.move_up)
 
 
+class ClientCommandDeriveHeadingMoveDown(unittest.TestCase):
+    def setUp(self):
+        self.cc = pong.common.ClientCommand()
+        self.cc.move_down = True
+
+    def test_get_dir(self):
+        heading = self.cc.heading()
+        self.assertEqual(heading, Vector2(0, 1))    # Positive Y means going down
+
+
+class ClientCommandDeriveHeadingMoveUp(unittest.TestCase):
+    def setUp(self):
+        self.cc = pong.common.ClientCommand()
+        self.cc.move_up = True
+
+    def test_get_dir(self):
+        heading = self.cc.heading()
+        self.assertEqual(heading, Vector2(0, -1))

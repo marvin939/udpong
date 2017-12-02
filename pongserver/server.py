@@ -1,3 +1,5 @@
+import pygame
+from pygame.math import Vector2
 import json
 import queue
 import threading
@@ -17,7 +19,7 @@ class PongServer(threading.Thread, socket.socket):
         socket.socket.__init__(self, type=socket.SOCK_DGRAM)
 
         self.port = self.DEFAULT_PORT if port is None else port
-        self.settimeout(self.TIMEOUT)
+        # self.settimeout(self.TIMEOUT)
         self.bind(('localhost', self.port))
         self.clients = []
         self.player_addresses = dict()
@@ -27,9 +29,26 @@ class PongServer(threading.Thread, socket.socket):
         self.pong_world = pong.game.Pong()
 
     def run(self):
-        pass
-        # self.clients = self.wait_clients()
-        # self.send_player_numbers(self.clients)
+        print('Starting server.')
+        
+        for i in range(2):
+            player_number = i + 1
+
+            print('Waiting for client #{}'.format(player_number))
+            c = self.wait_client()
+            self.clients.append(c)
+
+            print('Sending player number: {}'.format(player_number))
+            self.send_player_number(c, player_number)
+
+        print('Starting game.')
+        clock = pygame.time.Clock()
+        seconds_passed = 0
+
+        while True:
+            self.server.pong_world.update(seconds_passed=seconds_passed)
+            seconds_passed = clock.tick() / 1000
+        return
 
     def wait_client(self, return_queue=None):
         """Step 1: Wait for a client to connect."""
@@ -43,16 +62,11 @@ class PongServer(threading.Thread, socket.socket):
             return address_info
 
     def send_player_number(self, client_address, player_number):
-        """Step 2: Send the player number to the connected client"""
-
-        # Spawn a client handler thread instead, which sends the player number to the client
-        # self.sendto(str(player_number).encode('utf-8'), client_address)
-
+        """Step 2: Create a client handler object to send the player number to the connected client"""
         ch = ClientHandler(self.port + self._current_player_to_assign, client_address, player_number, self)
         self.client_handlers.append(ch)
         self._current_player_to_assign += 1
         ch.start()    # Start happens later in another function...?
-        '''Step 3: Create client handler.'''
 
         self.player_addresses[player_number] = client_address
 
@@ -71,6 +85,7 @@ class ClientHandler(threading.Thread, socket.socket):
         self.player_number = player_number
         self.client_address = client_address
         self.server = server
+
         self.send_player_number()
 
     def send_player_number(self):
@@ -93,10 +108,19 @@ class ClientHandler(threading.Thread, socket.socket):
             return cc
 
     def run(self):
-        # Handle game input from client
-        # Send game updates to client
-        return
+        while True:
+            self.send_game_update()
+            cc = self.receive_client_command()
+            self.update_player_with_client_command(cc)
+
+    def update_player_with_client_command(self, cc):
+        player = None
+        if self.player_number == 1:
+            player = self.server.pong_world.player1
+        elif self.player_number == 2:
+            player = self.server.pong_world.player2
+        player.heading = cc.heading()
 
     def join(self, timeout=None):
-        super().join()
+        super().join(timeout=2)
         self.close()

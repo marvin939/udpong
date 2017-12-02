@@ -1,3 +1,5 @@
+from pygame.math import Vector2
+import json
 import copy
 import pygame.math
 import pong
@@ -98,3 +100,14 @@ class ClientCommand:
         for k, v in d.items():
             if k in self.__dict__.keys():
                 self.__dict__[k] = v
+
+    def json(self):
+        return json.dumps(self, object_hook=pong.common.to_json)
+
+    def heading(self):
+        dy = 0
+        if self.move_up:
+            dy = -1
+        elif self.move_down:
+            dy = +1
+        return Vector2(0, dy)
