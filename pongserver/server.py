@@ -21,7 +21,7 @@ class PongServer(threading.Thread, socket.socket):
 
         self.port = self.DEFAULT_PORT if port is None else port
         # self.settimeout(self.TIMEOUT)
-        self.bind(('localhost', self.port))
+        self.bind(('', self.port))
         self.clients = []
         self.player_addresses = dict()
         self._current_player_to_assign = 1
@@ -30,6 +30,8 @@ class PongServer(threading.Thread, socket.socket):
         self.pong_world = pong.game.Pong()
 
     def run(self):
+        print('Hosting at:', self.getsockname())
+
         print('Starting server.')
 
         for i in range(2):

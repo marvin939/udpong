@@ -12,7 +12,14 @@ import pong.entities
 """Pong GUI client"""
 
 # LOCAL_ADDRESS = ('localhost', 10400)
-SERVER_ADDRESS = ('localhost', pongserver.server.PongServer.DEFAULT_PORT)
+
+
+# SERVER_ADDRESS = ('localhost', pongserver.server.PongServer.DEFAULT_PORT)
+address = input('Server address (host:port) = ')
+host, port = address.split(':')
+port = int(port)
+
+SERVER_ADDRESS = (host, port)
 SCREEN_SIZE = (pong.entities.World.WIDTH, pong.entities.World.HEIGHT)
 
 FPS = 60
